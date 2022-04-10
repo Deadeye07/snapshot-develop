@@ -7,6 +7,9 @@
   "defaults": {
     "space": {
       "activeStep": 1
+    },
+    "proposal": {
+      "someParam": true
     }
   }
 }
