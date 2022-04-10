@@ -1,12 +1,8 @@
 <script>
-import getProvider from '@snapshot-labs/snapshot.js/src/utils/provider';
 import Plugin from '../index';
 import { shorten } from '@/helpers/utils';
 import { useIntl } from '@/composables/useIntl';
 import { useWeb3 } from '@/composables/useWeb3';
-import { ref, onMounted, computed, watch } from 'vue';
-import { signMessage } from '@snapshot-labs/snapshot.js/src/utils/web3';
-import { getInstance } from '@snapshot-labs/lock/plugins/vue3';
 
 const { formatCompactNumber, formatPercentNumber } = useIntl();
 const { web3Account } = useWeb3();
@@ -20,61 +16,34 @@ export default {
     return {
       loading: false,
       plugin: new Plugin(),
-      activeStep: 0
+      activeStep: 1
     };
   },
   computed: {
-    totalScore() {
-      const basicCount = this.space.plugins?.quorum?.basicCount;
-      if (basicCount && this.proposal.type === 'basic') {
-        return this.results.resultsByVoteBalance
-          .filter((score, i) => basicCount.includes(i))
-          .reduce((a, b) => a + b, 0);
-      }
-      return this.results.resultsByVoteBalance.reduce((a, b) => a + b, 0);
-    },
     isOwner() {
       return web3Account.value === this.proposal.author;
     }
   },
   methods: {
-    async incrementStep() {
-      const auth = getInstance();
-      let sig;
-
-      const msg = {
-        author: web3Account.value,
-        msg: this.activeStep++,
-        proposal_id: this.proposal.proposalId
-      };
-      sig = await signMessage(
-        auth.web3,
-        JSON.stringify(msg),
-        web3Account.value
-      );
-      const res = await this.postData(
-        `https://uia5m1.deta.dev/add`,
-        {
-          address: web3Account.value,
-          msg: this.activeStep,
-          sig
-        },
-        //token ? { authorization: token } : null
-      );
+    async getActiveStep() {
+      //TODO Call api with proposalID to retrieve current activeStep
     },
+    async incrementStep() {
+      // const auth = getInstance();
+      // let sig;
 
-    async postData(url = '', data = {}, authorization) {
-      // Default options are marked with *
-
-      const response = await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-type': 'application/json;charset=UTF-8',
-          ...authorization
-        }
-      });
-      return response.json(); // parses JSON response into native JavaScript objects
+      // const msg = {
+      //   author: web3Account.value,
+      //   msg: this.activeStep++,
+      //   proposal_id: this.proposal.proposalId
+      // };
+      // sig = await signMessage(
+      //   auth.web3,
+      //   JSON.stringify(msg),
+      //   web3Account.value
+      // );
+      //TODO call API to increment activeStep
+      this.activeStep++;
     }
   }
 };
@@ -162,6 +131,7 @@ export default {
 
 .stepper-item .step-counter {
   position: relative;
+  color: white;
   z-index: 5;
   display: flex;
   justify-content: center;
@@ -169,7 +139,7 @@ export default {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #ccc;
+  background: #565656;
   margin-bottom: 6px;
 }
 

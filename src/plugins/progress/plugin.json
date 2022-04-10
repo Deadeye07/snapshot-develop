@@ -2,12 +2,11 @@
   "name": "Progress",
   "version": "0.1.0",
   "author": "nick",
-  "website": "https://github.com/snapshot-labs/snapshot/tree/develop/src/plugins/quorum",
-  "icon": "ipfs://Qmbyq2emXpjv1oFFJnhS3jL8aXZAqnya7zmNtKYXEs8jXa",
+  "website": "https://github.com/Deadeye07/snapshot-develop/tree/master/src/plugins/progress",
+  "icon": "",
   "defaults": {
     "space": {
-      "strategy": "static",
-      "total": 1234
+      "activeStep": 1
     }
   }
 }
