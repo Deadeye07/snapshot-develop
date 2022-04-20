@@ -15,18 +15,38 @@ export default {
   data() {
     return {
       loading: false,
+      showEditPanel: false,
       plugin: new Plugin(),
-      activeStep: 1
+      steps: [
+        {
+          id: 1,
+          text: 'Voting',
+          status: 'active'
+        },
+        {
+          id: 2,
+          text: 'Passed',
+          status: 'pending'
+        }
+      ]
     };
   },
   computed: {
     isOwner() {
       return web3Account.value === this.proposal.author;
+    },
+    isComplete() {
+      return this.proposal.state !== 'active';
     }
   },
   methods: {
-    async getActiveStep() {
-      //TODO Call api with proposalID to retrieve current activeStep
+    async getActiveSteps() {
+      //TODO: Call api with proposalID to retrieve current activeStep
+      const response = fetch(
+        'https://jissr670k3.execute-api.us-east-1.amazonaws.com/dev/proposal/1'
+      ).then(response => response.json());
+      return true;
+      // https://1f4w55dofg.execute-api.us-east-1.amazonaws.com/default/getProposalStep?proposalId=1
     },
     async incrementStep() {
       // const auth = getInstance();
@@ -42,8 +62,19 @@ export default {
       //   JSON.stringify(msg),
       //   web3Account.value
       // );
-      //TODO call API to increment activeStep
+
+      // TODO: show confirmation modal
+      // TODO: call API to increment activeStep
       this.activeStep++;
+    },
+    async createNewStep() {
+      // TODO: call API to create a new step for this proposal
+    },
+    async setStepComplete() {
+      //Call API to set step status to complete
+      const response = fetch(
+        'https://jissr670k3.execute-api.us-east-1.amazonaws.com/dev/proposal/1'
+      ).then(response => response.json());
     }
   }
 };
@@ -51,41 +82,58 @@ export default {
 
 <template>
   <BaseBlock title="Progress" :loading="!loaded">
-    <BaseButton
-      @click="incrementStep()"
-      class="!bg-primary !text-white float-right"
-      v-if="isAdmin || isOwner"
-    >
-      Update
-    </BaseButton>
-    <div class="stepper-wrapper">
-      <div
-        v-bind:class="{ active: activeStep === 1, completed: activeStep > 1 }"
-        class="stepper-item"
-      >
-        <div class="step-counter">1</div>
-        <div class="step-name">Voting</div>
+    <div class="flex flex-col">
+      <div class="stepper-wrapper">
+        <div
+          v-for="step in steps"
+          :key="step.id"
+          v-bind:class="{
+            active: step.status === 'active',
+            completed: step.status === 'complete'
+          }"
+          class="stepper-item"
+        >
+          <div class="step-counter">{{ step.id }}</div>
+          <div class="step-name">{{ step.text }}</div>
+        </div>
       </div>
-      <div
-        class="stepper-item"
-        v-bind:class="{ active: activeStep === 2, completed: activeStep > 2 }"
-      >
-        <div class="step-counter">2</div>
-        <div class="step-name">Passed</div>
-      </div>
-      <div
-        class="stepper-item"
-        v-bind:class="{ active: activeStep === 3, completed: activeStep > 3 }"
-      >
-        <div class="step-counter">3</div>
-        <div class="step-name">Purchase of Tokens</div>
-      </div>
-      <div
-        class="stepper-item"
-        v-bind:class="{ active: activeStep === 4, completed: activeStep > 4 }"
-      >
-        <div class="step-counter">4</div>
-        <div class="step-name">Completed</div>
+      <div class="w-100">
+        <BaseButton
+          @click="getActiveSteps()"
+          class="!bg-primary !text-white w-full"
+        >
+          Get Step
+        </BaseButton>
+        <BaseButton
+          @click="showEditPanel = true"
+          class="!bg-primary !text-white w-full"
+          v-if="(isAdmin || isOwner) && !isComplete"
+        >
+          Edit
+        </BaseButton>
+        <BaseBlock v-if="showEditPanel">
+          <div v-for="step in steps" :key="step.id">
+            {{ step.text }} Status: {{ step.status }}
+            <BaseButton
+              class="!bg-primary !text-white"
+              v-if="step.status === 'active'"
+              @click="setStepComplete(step.id)"
+            >
+              Complete
+            </BaseButton>
+          </div>
+          Step Name
+          <BaseButton class="w-full">
+            <input class="input w-full text-center" />
+          </BaseButton>
+          <BaseButton
+            @click="createNewStep()"
+            class="!bg-primary !text-white w-full"
+            v-if="isAdmin || isOwner"
+          >
+            Add Step
+          </BaseButton>
+        </BaseBlock>
       </div>
     </div>
   </BaseBlock>
