@@ -39,33 +39,19 @@ export default {
       return this.proposal.state !== 'active';
     }
   },
+  beforeMount() {
+    this.getActiveSteps();
+  },
   methods: {
     async getActiveSteps() {
-      //TODO: Call api with proposalID to retrieve current activeStep
-      const response = fetch(
-        'https://jissr670k3.execute-api.us-east-1.amazonaws.com/dev/proposal/1'
-      ).then(response => response.json());
-      return true;
-      // https://1f4w55dofg.execute-api.us-east-1.amazonaws.com/default/getProposalStep?proposalId=1
-    },
-    async incrementStep() {
-      // const auth = getInstance();
-      // let sig;
-
-      // const msg = {
-      //   author: web3Account.value,
-      //   msg: this.activeStep++,
-      //   proposal_id: this.proposal.proposalId
-      // };
-      // sig = await signMessage(
-      //   auth.web3,
-      //   JSON.stringify(msg),
-      //   web3Account.value
-      // );
-
-      // TODO: show confirmation modal
-      // TODO: call API to increment activeStep
-      this.activeStep++;
+      if (this.isComplete) {
+        const apiUrl =
+          'https://jissr670k3.execute-api.us-east-1.amazonaws.com/dev/proposal/' +
+          this.proposal.id;
+        fetch(apiUrl).then(
+          response => response.json().then(data => (this.steps = data.Items)) // TODO: Need to sort by index
+        );
+      }
     },
     async createNewStep() {
       // TODO: call API to create a new step for this proposal
@@ -84,6 +70,20 @@ export default {
   <BaseBlock title="Progress" :loading="!loaded">
     <div class="flex flex-col">
       <div class="stepper-wrapper">
+        <div class="stepper-item completed">
+          <div class="step-counter">1</div>
+          <div class="step-name">Voting</div>
+        </div>
+        <div
+          v-bind:class="{
+            active: !isComplete,
+            completed: isComplete
+          }"
+          class="stepper-item"
+        >
+          <div class="step-counter">2</div>
+          <div class="step-name">Voting Complete</div>
+        </div>
         <div
           v-for="step in steps"
           :key="step.id"
@@ -93,21 +93,15 @@ export default {
           }"
           class="stepper-item"
         >
-          <div class="step-counter">{{ step.id }}</div>
-          <div class="step-name">{{ step.text }}</div>
+          <div class="step-counter">{{ step.index }}</div>
+          <div class="step-name">{{ step.description }}</div>
         </div>
       </div>
       <div class="w-100">
         <BaseButton
-          @click="getActiveSteps()"
-          class="!bg-primary !text-white w-full"
-        >
-          Get Step
-        </BaseButton>
-        <BaseButton
           @click="showEditPanel = true"
           class="!bg-primary !text-white w-full"
-          v-if="(isAdmin || isOwner) && !isComplete"
+          v-if="(isAdmin || isOwner) && isComplete"
         >
           Edit
         </BaseButton>
