@@ -3,10 +3,11 @@ import Plugin from '../index';
 import { shorten } from '@/helpers/utils';
 import { useIntl } from '@/composables/useIntl';
 import { useWeb3 } from '@/composables/useWeb3';
+import { getInstance } from '@snapshot-labs/lock/plugins/vue3';
+import { signMessage } from '@snapshot-labs/snapshot.js/src/utils/web3';
 
 const { formatCompactNumber, formatPercentNumber } = useIntl();
 const { web3Account } = useWeb3();
-
 export default {
   setup() {
     return { shorten, formatCompactNumber, formatPercentNumber };
@@ -35,6 +36,25 @@ export default {
     this.getActiveSteps();
   },
   methods: {
+    async requireSignature() {
+      const storedAuth = localStorage.getItem('snap-progress');
+      if (storedAuth) {
+        return storedAuth;
+      }
+
+      const auth = getInstance();
+      const signature = await signMessage(
+        auth.web3,
+        'Signing this message will allow us to authorize your request to update the progress of your proposal.',
+        web3Account.value
+      );
+
+      // TODO: Need to do something if the reject signature
+      const authHeader = this.proposal.id + '-' + signature;
+      localStorage.setItem('snap-progress', authHeader);
+
+      return authHeader;
+    },
     async getActiveSteps() {
       if (this.isComplete) {
         const apiUrl =
@@ -54,14 +74,21 @@ export default {
     },
     async createNewStep() {
       if (this.newStepDescription !== '') {
+        const sig = await this.requireSignature();
+
         this.addIsLoading = true;
         const apiUrl =
-          'https://jissr670k3.execute-api.us-east-1.amazonaws.com/dev/proposal/' +
+          'https://jci7szds71.execute-api.us-east-1.amazonaws.com/dev/proposal/' +
           this.proposal.id;
         const requestOptions = {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ description: this.newStepDescription })
+          headers: {
+            'Content-Type': 'application/json',
+            authorization: sig
+          },
+          body: JSON.stringify({
+            description: this.newStepDescription
+          })
         };
         fetch(apiUrl, requestOptions).then(response =>
           response.json().then(response => {
@@ -73,14 +100,16 @@ export default {
       }
     },
     async setStepComplete(step) {
+      const sig = await this.requireSignature();
+
       this.completeIsLoading = true;
       const requestOptions = {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', authorization: sig },
         body: JSON.stringify({ proposalId: step.proposalId })
       };
       const response = fetch(
-        'https://jissr670k3.execute-api.us-east-1.amazonaws.com/dev/proposal/' +
+        'https://jci7szds71.execute-api.us-east-1.amazonaws.com/dev/proposal/' +
           step.id,
         requestOptions
       ).then(response => {
@@ -89,13 +118,18 @@ export default {
       });
     },
     async deleteStep(step) {
+      const sig = await this.requireSignature();
+
       const apiUrl =
-        'https://jissr670k3.execute-api.us-east-1.amazonaws.com/dev/proposal/' +
+        'https://jci7szds71.execute-api.us-east-1.amazonaws.com/dev/proposal/' +
         step.id +
         '?proposalId=' +
         this.proposal.id;
       const requestOptions = {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          authorization: sig
+        }
       };
       fetch(apiUrl, requestOptions).then(() => {
         this.getActiveSteps();
@@ -117,10 +151,6 @@ export default {
     </div>
     <div class="flex flex-col">
       <div class="stepper-wrapper">
-        <div class="stepper-item completed">
-          <div class="step-counter">1</div>
-          <div class="step-name">Voting</div>
-        </div>
         <div
           v-bind:class="{
             active: !isComplete,
@@ -128,11 +158,11 @@ export default {
           }"
           class="stepper-item"
         >
-          <div class="step-counter">2</div>
-          <div class="step-name">Voting Complete</div>
+          <div class="step-counter">1</div>
+          <div class="step-name">Voting</div>
         </div>
         <div
-          v-for="step in steps"
+          v-for="(step, index) in steps"
           :key="step.id"
           v-bind:class="{
             active: step.stepStatus === 'active',
@@ -140,7 +170,7 @@ export default {
           }"
           class="stepper-item"
         >
-          <div class="step-counter">{{ step.index + 2 }}</div>
+          <div class="step-counter">{{ index + 2 }}</div>
           <div class="step-name">{{ step.description }}</div>
         </div>
       </div>
@@ -149,12 +179,8 @@ export default {
           <div class="font-bold mb-4">
             <span class="text-xl">Update</span>
           </div>
-          <div class="flex text-xl mb-2">
-            <div class="w-1/5 text-center">Step</div>
-            <div class="w-1/2"></div>
-            <div class="w-1/4">Completed</div>
-          </div>
-          <div class="mb-4" v-for="step in steps" :key="step.id">
+
+          <div class="mb-4" v-for="(step, index) in steps" :key="step.id">
             <div class="flex mb-4">
               <div class="w-1/5">
                 <div
@@ -164,7 +190,7 @@ export default {
                   }"
                   class="stepper-item"
                 >
-                  <div class="step-counter">{{ step.index + 2 }}</div>
+                  <div class="step-counter">{{ index + 2 }}</div>
                 </div>
               </div>
               <div class="w-1/2">
@@ -199,12 +225,11 @@ export default {
                   ></i>
                 </a>
               </div>
-              <div class="text-right pt-2">
+              <div class="text-right pt-12px">
                 <i
                   v-if="step.stepStatus === 'active'"
-                  class="iconfont iconclose cursor-pointer"
+                  class="gg-trash cursor-pointer"
                   @click="deleteStep(step)"
-                  style="font-size: 25px; line-height: 25px"
                 ></i>
               </div>
             </div>
@@ -233,6 +258,9 @@ export default {
   </BaseBlock>
 </template>
 <style>
+.pt-12px {
+  padding-top: 12px;
+}
 a {
   text-decoration: none;
 }
@@ -366,5 +394,43 @@ a.button {
   border-right-color: #0dd;
   border-bottom-color: #f90;
   animation: spinner 0.6s linear infinite;
+}
+.gg-trash {
+  box-sizing: border-box;
+  position: relative;
+  display: block;
+  transform: scale(var(--ggs, 1));
+  width: 10px;
+  height: 12px;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 2px, inset -2px 0 0, inset 2px 0 0;
+  border-bottom-left-radius: 1px;
+  border-bottom-right-radius: 1px;
+  margin-top: 4px;
+}
+.gg-trash::after,
+.gg-trash::before {
+  content: '';
+  display: block;
+  box-sizing: border-box;
+  position: absolute;
+}
+.gg-trash::after {
+  background: currentColor;
+  border-radius: 3px;
+  width: 16px;
+  height: 2px;
+  top: -4px;
+  left: -5px;
+}
+.gg-trash::before {
+  width: 10px;
+  height: 4px;
+  border: 2px solid;
+  border-bottom: transparent;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  top: -7px;
+  left: -2px;
 }
 </style>
