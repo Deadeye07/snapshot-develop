@@ -21,7 +21,9 @@ export default {
       showEditPanel: false,
       newStepDescription: '',
       plugin: new Plugin(),
-      steps: []
+      steps: [],
+      closeModal: false,
+      stepToDelete: {}
     };
   },
   computed: {
@@ -117,7 +119,15 @@ export default {
         this.completeIsLoading = false;
       });
     },
-    async deleteStep(step) {
+    closeEvent() {
+      this.closeModal = false;
+    },
+    showDeleteModal(step) {
+      this.stepToDelete = step;
+      this.closeModal = true;
+    },
+    async deleteStep() {
+      const step = this.stepToDelete;
       const sig = await this.requireSignature();
 
       const apiUrl =
@@ -132,6 +142,7 @@ export default {
         }
       };
       fetch(apiUrl, requestOptions).then(() => {
+        this.closeEvent();
         this.getActiveSteps();
       });
     }
@@ -193,7 +204,7 @@ export default {
                   <div class="step-counter">{{ index + 2 }}</div>
                 </div>
               </div>
-              <div class="w-1/2">
+              <div class="w-1/2 pr-1">
                 {{ step.description }}
               </div>
 
@@ -229,7 +240,7 @@ export default {
                 <i
                   v-if="step.stepStatus === 'active'"
                   class="gg-trash cursor-pointer"
-                  @click="deleteStep(step)"
+                  @click="showDeleteModal(step)"
                 ></i>
               </div>
             </div>
@@ -256,6 +267,27 @@ export default {
       </div>
     </div>
   </BaseBlock>
+  <BaseModal :open="closeModal" @close="closeEvent">
+    <template v-slot:header>
+      <h3>Delete Step</h3>
+    </template>
+    <div class="text-center mt-3">
+      <p>Are you sure you want to delete?</p>
+    </div>
+    <div
+      class="mb-2 mt-3 text-center flex items-center content-center justify-center"
+    >
+      <BaseButton
+        class="!bg-primary !text-white"
+        :loading="loading"
+        @click="deleteStep"
+        >Yes</BaseButton
+      >
+      <BaseButton @click="closeEvent" :disabled="loading" class="ml-2">
+        No
+      </BaseButton>
+    </div>
+  </BaseModal>
 </template>
 <style>
 .pt-12px {
