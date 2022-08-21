@@ -161,28 +161,56 @@ export default {
       ></i>
     </div>
     <div class="flex flex-col">
-      <div class="stepper-wrapper">
-        <div
+      <div class="">
+        <BaseBlock
           v-bind:class="{
             active: !isComplete,
             completed: isComplete
           }"
-          class="stepper-item"
+          class=""
         >
-          <div class="step-counter">1</div>
-          <div class="step-name">Voting</div>
-        </div>
+          <div class="">1 Voting</div>
+        </BaseBlock>
         <div
           v-for="(step, index) in steps"
           :key="step.id"
           v-bind:class="{
-            active: step.stepStatus === 'active',
-            completed: step.stepStatus === 'complete'
+            test: step.stepStatus === 'active',
+            'border-green': step.stepStatus === 'complete'
           }"
-          class="stepper-item"
+          class="mt-2 p-3 mb-2 md:rounded-xl border-2 bg-skin-block-bg text-base"
         >
-          <div class="step-counter">{{ index + 2 }}</div>
-          <div class="step-name">{{ step.description }}</div>
+          <div class="flex h-16">
+            <div>
+              <div class="step-counter">
+                {{ index + 2 }}
+              </div>
+            </div>
+            <div class="w-full ml-3">
+              {{ step.description }}
+            </div>
+            <div class="text-right pt-12px relative -top-2">
+              <i
+                v-if="step.stepStatus === 'active'"
+                class="gg-trash cursor-pointer"
+                @click="showDeleteModal(step)"
+              ></i>
+            </div>
+          </div>
+          <div class="flex">
+            <div class="w-full text-xs">
+              <div v-if="step.stepStatus === 'complete'">Completed</div>
+              <div v-if="step.stepStatus === 'complete'">Insert Date</div>
+            </div>
+            <div class="">
+              <BaseButton disabled="true" v-if="step.stepStatus === 'complete'"
+                >Completed
+              </BaseButton>
+              <BaseButton v-if="step.stepStatus !== 'complete'"
+                >Complete
+              </BaseButton>
+            </div>
+          </div>
         </div>
       </div>
       <div class="w-100">
@@ -290,6 +318,9 @@ export default {
   </BaseModal>
 </template>
 <style>
+.h-16 {
+  height: 4rem;
+}
 .pt-12px {
   padding-top: 12px;
 }
